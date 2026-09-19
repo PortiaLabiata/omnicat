@@ -1,7 +1,5 @@
-pub mod error;
-
-use crate::error::StdioError;
 use transport::*;
+use transport::error::*;
 use tokio::io::{
     self,
     AsyncWriteExt,
@@ -13,12 +11,10 @@ pub struct TransportStdio {
     stdout: io::Stdout,
 }
 
-pub struct StdioHandle {}
-
-impl CreationHandle for StdioHandle {}
-
-impl Transport<StdioError, StdioHandle> for TransportStdio {
-    async fn create(_handle: StdioHandle) -> Result<Self, StdioError> {
+impl Creatable for TransportStdio {
+    async fn create(_handle: CreationHandle) 
+        -> Result<Self, Error> 
+    {
         let stdin = io::stdin();
         let stdout = io::stdout();
 
@@ -27,16 +23,18 @@ impl Transport<StdioError, StdioHandle> for TransportStdio {
             stdout,
         });
     }
+}
 
+impl Transport for TransportStdio {
     async fn send(self, data: &[u8], _timeout: u32) 
-        -> (Self, Result<usize, StdioError>)
+        -> (Self, Result<usize, Error>)
     {
         let mut stdout = self.stdout;
         let stdin = self.stdin;
 
         let res = match stdout.write(data).await {
             Ok(r) => Ok(r),
-            Err(e) => Err(StdioError::new(
+            Err(e) => Err(Error::new(
                 "Failed to read from stdin, somehow",
                 e,
             )),
@@ -48,14 +46,14 @@ impl Transport<StdioError, StdioHandle> for TransportStdio {
     }
     
     async fn receive(self, data: &mut [u8], _timeout: u32) 
-        -> (Self, Result<usize, StdioError>) 
+        -> (Self, Result<usize, Error>) 
     {
         let stdout = self.stdout;
         let mut stdin = self.stdin;
 
         let res = match stdin.read(data).await {
             Ok(r) => Ok(r),
-            Err(e) => Err(StdioError::new(
+            Err(e) => Err(Error::new(
                 "Failed to read from stdin, somehow",
                 e,
             )),

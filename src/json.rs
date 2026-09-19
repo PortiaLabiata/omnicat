@@ -7,7 +7,22 @@ use transport::*;
 pub struct JsonConfig {
     pub name: String,
     pub kind: TransportKind,
+
+    #[serde(default = "default_rxbuf")]
+    pub rxbuf_size: usize,
+
+    #[serde(default = "default_txbuf")]
+    pub txbuf_size: usize,
+
     pub to: Vec<String>,
+}
+
+fn default_rxbuf() -> usize {
+    return 1500;
+}
+
+fn default_txbuf() -> usize {
+    return 1500;
 }
 
 #[derive(Deserialize)]
@@ -16,7 +31,7 @@ pub struct JsonConfigs {
 }
 
 async fn create_stdio(_cfg: &JsonConfig) -> Result<TransportStdio, ()> {
-    return TransportStdio::create(StdioHandle {})
+    return TransportStdio::create(CreationHandle::default())
         .await
         .map_err(|_| ());
 } 
@@ -27,11 +42,12 @@ pub async fn create_transport(cfg: &JsonConfig) -> Result<TransportStruct, ()> {
             return create_stdio(cfg)
                 .await
                 .map(|v| { 
-                    let w = TransportWrapper::Stdio(v);
                     TransportStruct {
                         name: cfg.name.clone(),
+                        rxbuf: Vec::with_capacity(cfg.rxbuf_size),
+                        txbuf: Vec::with_capacity(cfg.txbuf_size),
                         to: cfg.to.clone(),
-                        wrapper: w,
+                        transport: TransportEnum::Stdio(v),
                     }
                 });
         }

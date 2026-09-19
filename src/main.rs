@@ -2,10 +2,11 @@ mod json;
 mod transport_wrapper;
 
 use json::*;
+use transport::*;
 
-use std::process::exit;
-use std::fs::File;
 use std::collections::HashSet;
+use std::fs::File;
+use std::process::exit;
 
 use clap::Parser;
 
@@ -50,7 +51,7 @@ async fn run_command() {
         };
 
         println!("Found transport \"{}\" with kind {:?}", cfg.name, cfg.kind);
-        transports.push(transport); 
+        transports.push(transport);
     }
 
     let mut unchecked_set = HashSet::with_capacity(transport_num);
@@ -60,25 +61,18 @@ async fn run_command() {
 
     let mut pending_futures = Vec::with_capacity(transport_num);
     loop {
-        for &transport in unchecked_set.iter() {
-            pending_futures.push(transport); 
-        }
-
-        for &future in pending_futures.iter() {
-            if future.
+        for transport in unchecked_set.drain() {
+            let future = transport.transport.receive(&mut transport.rxbuf, 0);
+            pending_futures.push(future);
         }
     }
 }
 
-async fn help_command() {
-
-}
+async fn help_command() {}
 
 #[tokio::main]
 async fn main() {
-    let args: Vec<_> = std::env::args()
-        .take(2)
-        .collect();
+    let args: Vec<_> = std::env::args().take(2).collect();
 
     if args.len() < 2 {
         eprintln!("Invalid number of arguments: need at least one command");
@@ -89,11 +83,11 @@ async fn main() {
     match command {
         "run" => {
             run_command().await;
-        },
+        }
 
         "help" => {
-            help_command().await;    
-        },
+            help_command().await;
+        }
 
         _ => {
             eprintln!("Invalid command: {}", command);
