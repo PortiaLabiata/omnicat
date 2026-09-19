@@ -11,7 +11,7 @@ pub struct TransportStdio {
     stdout: io::Stdout,
 }
 
-impl Creatable for TransportStdio {
+impl Transport for TransportStdio {
     async fn create(_handle: CreationHandle) 
         -> Result<Self, Error> 
     {
@@ -23,10 +23,8 @@ impl Creatable for TransportStdio {
             stdout,
         });
     }
-}
 
-impl Transport for TransportStdio {
-    async fn send(self, data: &[u8], _timeout: u32) 
+    async fn send(self, data: &[u8]) 
         -> (Self, Result<usize, Error>)
     {
         let mut stdout = self.stdout;
@@ -45,7 +43,7 @@ impl Transport for TransportStdio {
         }, res);
     }
     
-    async fn receive(self, data: &mut [u8], _timeout: u32) 
+    async fn receive(self, data: &mut [u8]) 
         -> (Self, Result<usize, Error>) 
     {
         let stdout = self.stdout;

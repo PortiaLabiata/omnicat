@@ -1,5 +1,4 @@
 use serde::Deserialize;
-use ambassador::Delegate;
 
 use stdio::*;
 use transport::*;
@@ -11,10 +10,45 @@ pub enum TransportKind {
     Stdio,
 }
 
-#[derive(Delegate)]
-#[delegate(Transport)]
 pub enum TransportEnum {
     Stdio(TransportStdio),
+}
+
+macro_rules! delegate_transport {
+    ($enum:ident { $($variant:ident),* $(,)? }) => {
+        impl transport::Transport for $enum {
+            async fn create(handle: CreationHandle)
+                -> Result<Self, Error>
+            {
+                return match self {
+                    $( $enum::$variant(inner) => inner.create(handle).await ),*
+                }
+            }
+
+
+            async fn send(self, data: &[u8])
+                -> (Self, Result<usize, Error>)
+            {
+                return match self {
+                    $( $enum::$variant(inner) => inner.send(data).await ),*
+                }
+            }
+
+            async fn receive(self, receive: &mut [u8])
+                -> (Self, Result<usize, Error>)
+            {
+                return match self {
+                    $( $enum::$variant(inner) => inner.receive(data).await ),*
+                }
+            }
+        }
+    }
+}
+
+delegate_transport!{
+    TransportEnum {
+        Stdio,
+    }
 }
 
 pub struct TransportStruct {

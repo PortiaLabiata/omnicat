@@ -59,12 +59,8 @@ async fn run_command() {
         unchecked_set.insert(transport);
     }
 
-    let mut pending_futures = Vec::with_capacity(transport_num);
     loop {
-        for transport in unchecked_set.drain() {
-            let future = transport.transport.receive(&mut transport.rxbuf, 0);
-            pending_futures.push(future);
-        }
+        
     }
 }
 

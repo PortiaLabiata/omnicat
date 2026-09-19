@@ -8,17 +8,15 @@ pub struct CreationHandle {
     path: String,
 }
 
-pub trait Creatable: Sized {
-    fn create(handle: CreationHandle)
-        -> impl Future<Output = Result<Self, Error>>;
-}
-
-#[ambassador::delegatable_trait]
+#[allow(warnings)]
 pub trait Transport: Sized {
-    fn send(self, data: &[u8], timeout: u32)
-        -> impl Future<Output = (Self, Result<usize, Error>)>;
+    async fn create(handle: CreationHandle)
+        -> Result<Self, Error>;
 
-    fn receive(self, receive: &mut [u8], timeout: u32)
-        -> impl Future<Output = (Self, Result<usize, Error>)>;
+    async fn send(self, data: &[u8])
+        -> (Self, Result<usize, Error>);
+
+    async fn receive(self, receive: &mut [u8])
+        -> (Self, Result<usize, Error>);
 }
 
