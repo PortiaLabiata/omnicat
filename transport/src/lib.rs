@@ -10,9 +10,6 @@ pub struct CreationHandle {
 
 #[allow(warnings)]
 pub trait Transport: Sized {
-    async fn create(handle: CreationHandle)
-        -> Result<Self, Error>;
-
     async fn send(self, data: &[u8])
         -> (Self, Result<usize, Error>);
 

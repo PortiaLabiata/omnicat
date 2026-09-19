@@ -15,39 +15,36 @@ pub enum TransportEnum {
 }
 
 macro_rules! delegate_transport {
-    ($enum:ident { $($variant:ident : $transp:ident),* $(,)? }) => {
+    ($enum:ident { $($variant:ident),* $(,)? }) => {
         impl transport::Transport for $enum {
-            async fn create(handle: CreationHandle)
-                -> Result<$transp, Error>
-            {
-                return match self {
-                    $( $enum::$variant(inner) => inner.create(handle).await ),*
-                }
-            }
-
-
             async fn send(self, data: &[u8])
-                -> ($transp, Result<usize, Error>)
+                -> (Self, Result<usize, Error>)
             {
                 return match self {
-                    $( $enum::$variant(inner) => inner.send(data).await ),*
+                    $( $enum::$variant(inner) => {
+                        let res = inner.send(data).await;
+                        ($enum::$variant(res.0), res.1)
+                    } ),*
                 }
             }
 
-            async fn receive(self, receive: &mut [u8])
-                -> ($transp, Result<usize, Error>)
+            async fn receive(self, data: &mut [u8])
+                -> (Self, Result<usize, Error>)
             {
                 return match self {
-                    $( $enum::$variant(inner) => inner.receive(data).await ),*
+                    $( $enum::$variant(inner) => {
+                        let res = inner.receive(data).await;
+                        ($enum::$variant(res.0), res.1)
+                    } ),*
                 }
             }
         }
-    }
+    };
 }
 
 delegate_transport!{
     TransportEnum {
-        Stdio : TransportStdio,
+        Stdio,
     }
 }
 
