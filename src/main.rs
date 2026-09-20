@@ -4,11 +4,12 @@ mod transport_wrapper;
 use json::*;
 use transport::*;
 
-use std::collections::HashSet;
+use std::collections::VecDeque;
 use std::fs::File;
 use std::process::exit;
 
 use clap::Parser;
+use futures::stream::FuturesOrdered;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -54,13 +55,17 @@ async fn run_command() {
         transports.push(transport);
     }
 
-    let mut unchecked_set = HashSet::with_capacity(transport_num);
-    for transport in transports.iter() {
-        unchecked_set.insert(transport);
+    let mut unchecked_queue = VecDeque::with_capacity(transport_num);
+    for transport in transports.iter_mut() {
+        unchecked_queue.push_front(transport);
     }
 
+    let mut pending_futures = FuturesOrdered::new();
     loop {
-        
+        while let Some(t) = unchecked_queue.pop_back() {
+            let fut = t.transport.receive(&mut t.rxbuf);
+            pending_futures.push_front(fut);
+        }
     }
 }
 
