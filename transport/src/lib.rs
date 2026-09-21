@@ -5,11 +5,14 @@ use error::*;
 
 #[derive(Default)]
 pub struct CreationHandle {
-    path: String,
+    pub path: String,
+    pub id: u32,
 }
 
 #[allow(warnings)]
 pub trait Transport: Sized {
+    fn id(&self) -> u32;
+
     async fn send(self, data: &[u8])
         -> (Self, Result<usize, Error>);
 

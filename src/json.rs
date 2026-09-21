@@ -1,5 +1,7 @@
 use serde::Deserialize;
 use crate::transport_wrapper::*;
+use crate::id;
+
 use stdio::*;
 use transport::*;
 
@@ -31,25 +33,31 @@ pub struct JsonConfigs {
 }
 
 async fn create_stdio(_cfg: &JsonConfig) -> Result<TransportStdio, ()> {
-    return TransportStdio::create(CreationHandle::default())
+    let handle = CreationHandle {
+        id: id::get(),
+        ..Default::default()
+    };
+
+    return TransportStdio::create(handle)
         .await
         .map_err(|_| ());
 } 
 
-pub async fn create_transport(cfg: &JsonConfig) -> Result<TransportStruct, ()> {
+pub async fn create_transport(cfg: &JsonConfig) -> Option<()> {
     match cfg.kind {
         TransportKind::Stdio => {
-            return create_stdio(cfg)
+            let t = match create_stdio(cfg)
                 .await
                 .map(|v| { 
-                    TransportStruct {
-                        name: cfg.name.clone(),
-                        rxbuf: Vec::with_capacity(cfg.rxbuf_size),
-                        txbuf: Vec::with_capacity(cfg.txbuf_size),
-                        to: cfg.to.clone(),
-                        transport: TransportEnum::Stdio(v),
-                    }
-                });
+                    TransportEnum::Stdio(v)
+                })
+            {
+                Ok(t) => t,
+                Err(_) => return Some(()),
+            };
+
+            id::register_transport(t);
+            None
         }
     }
 }

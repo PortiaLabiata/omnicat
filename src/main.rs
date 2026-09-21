@@ -1,5 +1,6 @@
 mod json;
-mod transport_wrapper;
+mod registry;
+mod wrapper;
 
 use json::*;
 use transport::*;

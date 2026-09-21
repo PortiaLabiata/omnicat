@@ -7,18 +7,20 @@ use tokio::io::{
 };
 
 pub struct TransportStdio {
+    id: u32,
     stdin: io::Stdin,
     stdout: io::Stdout,
 }
 
 impl TransportStdio {
-    pub async fn create(_handle: CreationHandle) 
+    pub async fn create(handle: CreationHandle) 
         -> Result<Self, Error> 
     {
         let stdin = io::stdin();
         let stdout = io::stdout();
 
         return Ok(TransportStdio {
+            id: handle.id,
             stdin,
             stdout,
         });
@@ -26,11 +28,16 @@ impl TransportStdio {
 }
 
 impl Transport for TransportStdio {
+    fn id(&self) -> u32 {
+        return self.id;
+    } 
+
     async fn send(self, data: &[u8]) 
         -> (Self, Result<usize, Error>)
     {
         let mut stdout = self.stdout;
         let stdin = self.stdin;
+        let id = self.id;
 
         let res = match stdout.write(data).await {
             Ok(r) => Ok(r),
@@ -41,7 +48,7 @@ impl Transport for TransportStdio {
         };
 
         return (Self {
-            stdin, stdout
+            id, stdin, stdout
         }, res);
     }
     
@@ -50,6 +57,7 @@ impl Transport for TransportStdio {
     {
         let stdout = self.stdout;
         let mut stdin = self.stdin;
+        let id = self.id;
 
         let res = match stdin.read(data).await {
             Ok(r) => Ok(r),
@@ -60,7 +68,7 @@ impl Transport for TransportStdio {
         };
 
         return (Self {
-            stdin, stdout
+            id, stdin, stdout
         }, res);
     }
 }
